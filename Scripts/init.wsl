@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# 1:
+# unbuffer:
+## sudo apt install expect
+# mamba install expect
+cd "/mnt/d/Users/Shawn/Source/Repos/lengyanyu258/AutoBililiveUploader"
+# 不能出现汉字，否则传参过去是乱码~%?…,# *'☆&℃$︿★?ps|grep -c的结果也会为0
+nohup unbuffer "/home/shawn/.conda/bin/poetry" run python gen_bililive_replay.py -u -ev "/mnt/g/BililiveRecorder/347695154-12539113-千灯盏Y" > "/home/shawn/.cache/nohup/`date +%F_%H-%M-%S`.log" 2>&1 &
+
+# 2:
+sudo service cron start
+
+# 得先执行才能使用汉字，若先执行 #2，再执行 #1 时则不能出现汉字

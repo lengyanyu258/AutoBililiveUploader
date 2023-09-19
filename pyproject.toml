@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "auto-bililive-uploader"
+version = "1.0.0"
+description = "自动压制並上传录播姬文件至网盘"
+authors = ["Shawn Sun <lengyanyu258@outlook.com>"]
+license = "GPL-3.0-or-later"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+danmaku-tools = { git = "https://github.com/lengyanyu258/danmaku_tools.git" }
+
+[tool.poetry.group.dev.dependencies]
+black = "*"
+
+[[tool.poetry.source]]
+name = "tuna"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+priority = "default"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
