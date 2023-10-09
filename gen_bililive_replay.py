@@ -81,6 +81,7 @@ class Video:
 
 
 class Session:
+    __upload = False
     videos: List[Video]
     he_time: Optional[float]
     output_paths: dict[str, str]
@@ -103,10 +104,11 @@ class Session:
             return
         self.videos += [video]
 
-    def gen_output_paths(self):
+    def gen_output_paths(self, output_dir: pathlib.Path | None = None):
         output_path = pathlib.Path(f"{self.videos[0].base_path}.{self.output_mark}")
-        output_dir = output_path.parent / self.output_mark
-        output_dir.mkdir(parents=False, exist_ok=True)
+        if not output_dir:
+            output_dir = output_path.parent / self.output_mark
+            output_dir.mkdir(parents=False, exist_ok=True)
         output_base_path = os.fspath(output_dir / output_path.name)
 
         self.output_paths = {
@@ -140,7 +142,7 @@ class Session:
             f.write(xmls)
         danmaku_merge_command = (
             f"python -m danmaku_tools.merge_danmaku"
-            f" {self.output_paths['temp_ps1']}"
+            f' "{self.output_paths["temp_ps1"]}"'
             f" --offset_time -6"
             f' --video_time ".flv"'
             f" --output \"{self.output_paths['xml']}\""
@@ -160,10 +162,12 @@ class Session:
 
     async def process_xml(self):
         await self.clean_xml()
+        width_multiple = 32
         danmaku_extras_command = (
             f"python -m danmaku_tools.danmaku_energy_map"
             f" --graph \"{self.output_paths['he_graph']}\""
-            f" --graph_dpi {self.get_resolution()[0] // 16}"
+            f" --graph_figsize {width_multiple} 1"
+            f" --graph_dpi {self.get_resolution()[0] // width_multiple}"
             f" --he_map \"{self.output_paths['he_file']}\""
             f" --sc_list \"{self.output_paths['sc_file']}\""
             f" --he_time \"{self.output_paths['he_pos']}\""
@@ -188,10 +192,19 @@ class Session:
             print("Maybe there is no danmuku & no need to generate danmuku video.")
             exit()
 
-    def generate_concat(self):
-        concat_text = "\n".join(
-            [f"file '{video.video_file_path}'" for video in self.videos]
-        )
+    def generate_concat(self, is_win=False):
+        if is_win:
+            concat_text = "\n".join(
+                [
+                    f"file '{video.video_file_path.replace(self.__anchor, self.__drive)}'"
+                    for video in self.videos
+                ]
+            )
+        else:
+            concat_text = "\n".join(
+                [f"file '{video.video_file_path}'" for video in self.videos]
+            )
+
         with open(
             file=self.output_paths["concat_file"], mode="w", encoding="utf-8"
         ) as concat_file:
@@ -296,13 +309,14 @@ class Session:
         await async_wait_output(ffmpeg_command)
 
     async def process_video(self):
+        # TODO: 将视频拆分为三份(1060显卡的上限)并行渲染
         gop = 5  # set GOP = 5s
         avg_fps = sum([video.video_avg_fps for video in self.videos]) / len(self.videos)
         total_time = sum([video.video_duration for video in self.videos])
 
         if len(self.videos) > 1:
-            start_time = os.stat(self.videos[0].video_file_path).st_ctime
-            end_time = os.stat(self.videos[-1].video_file_path).st_mtime
+            start_time = os.stat(self.videos[-1].video_file_path).st_ctime
+            end_time = os.stat(self.videos[0].video_file_path).st_mtime
             real_total_time = end_time - start_time
             percentage = decimal.Decimal(total_time / real_total_time * 100).quantize(
                 decimal.Decimal("1.00"), rounding="ROUND_HALF_UP"
@@ -340,8 +354,22 @@ class Session:
                 max_video_bitrate = min_video_bitrate
             video_bitrate = min_video_bitrate
 
-        ass_path = pathlib.PurePath(self.output_paths["ass"]).as_posix()
+        ass_path = pathlib.PurePath(self.output_paths["ass"])
+        self.__anchor = ass_path.parents[-3].as_posix()
+        self.__drive = f"{ass_path.parts[2].upper()}:"
+
+        ass_path = ass_path.as_posix().replace(self.__anchor, self.__drive)
         self.output_paths["ass"] = ass_path.replace(":", "\\:")
+        self.output_paths["he_graph"] = self.output_paths["he_graph"].replace(
+            self.__anchor, self.__drive
+        )
+        self.generate_concat(True)
+        self.output_paths["concat_file"] = self.output_paths["concat_file"].replace(
+            self.__anchor, self.__drive
+        )
+        self.output_paths["danmaku_video"] = self.output_paths["danmaku_video"].replace(
+            self.__anchor, self.__drive
+        )
 
         video_res_x, video_res_y = self.get_resolution()
         filter_complex = f"""
@@ -384,8 +412,12 @@ class Session:
         )
         powershell_command = f"Measure-Command {{ {ffmpeg_command} | Out-Host }}"
 
-        with open(self.output_paths["temp_ps1"], "w") as f:
+        with open(self.output_paths["temp_ps1"], "w", encoding="gb18030") as f:
             f.write(powershell_command)
+
+        self.output_paths["temp_ps1"] = self.output_paths["temp_ps1"].replace(
+            self.__anchor, self.__drive
+        )
 
         powershell_command = (
             f"PowerShell.exe"
@@ -393,6 +425,7 @@ class Session:
             f" -ExecutionPolicy Bypass"
             # f' >> "{self.output_paths["extras_log"]}" 2>&1'
         )
+        print(powershell_command)
         sp.run(powershell_command, shell=True, check=True)
 
     async def gen_preparation(self):
@@ -406,14 +439,30 @@ class Session:
 
     async def gen_danmaku_video(self):
         await self.process_video()
+        if self.__upload:
+            danmaku_video = self.output_paths["danmaku_video"].replace(
+                self.__drive, self.__anchor
+            )
+            upload_command = (
+                f"aliyunpan upload"
+                f' "{danmaku_video}"'
+                f' "{(self.__drive_dir / self.__new_dirname.name).as_posix()}"'
+                # f' >> "{new_extras_log.as_posix()}" 2>&1'
+            )
+            print(upload_command)
+            sp.run(upload_command, shell=True, check=True)
 
     async def upload_aDrive(self):
+        self.__upload = True
         early_video = pathlib.Path(self.output_paths["early_video"])
         old_dirname = early_video.parent.parent
-        new_dirname = old_dirname.parent / f"{old_dirname.name} [auto upload]"
+        new_dirname = old_dirname.parent / f"{old_dirname.name} [Auto upload (Danmaku)]"
         early_video.parent.rename(new_dirname)
+        self.__new_dirname = new_dirname
+        self.gen_output_paths(new_dirname)
         parent_dir = new_dirname.parent
         drive_dir = pathlib.PurePath("/", parent_dir.parent.name, parent_dir.name)
+        self.__drive_dir = drive_dir
         # extras_log = pathlib.PurePath(self.output_paths["extras_log"])
         # new_extras_log = new_dirname / extras_log.name
         escaped_mark = self.output_cache_mark.replace(".", "\\.")
@@ -426,6 +475,7 @@ class Session:
         )
         # await async_wait_output(upload_command)
         # aliyunpan 本身具有计时功能
+        print(upload_command)
         sp.run(upload_command, shell=True, check=True)
 
 
@@ -449,10 +499,10 @@ def gen_replay(dir_path: pathlib.Path, filenames: list[pathlib.Path]):
 
     if RESULTS.early_video or RESULTS.all:
         asyncio.run(session.gen_early_video())
-    if RESULTS.danmaku_video or RESULTS.all:
-        asyncio.run(session.gen_danmaku_video())
     if RESULTS.upload or RESULTS.all:
         asyncio.run(session.upload_aDrive())
+    if RESULTS.danmaku_video or RESULTS.all:
+        asyncio.run(session.gen_danmaku_video())
 
 
 def watching_dir(
@@ -500,7 +550,7 @@ def waiting_dir(dir_path: pathlib.Path, old_file_num: int, old_dir_size: int):
         file_num = len(filenames)
         dir_size = sum([filename.stat().st_size for filename in filenames])
         print(f"{time.ctime(time.time())}, file_num: {file_num}, dir_size: {dir_size}")
-        if file_num == old_file_num and dir_size == old_dir_size:
+        if file_num <= old_file_num and dir_size <= old_dir_size:
             old_file_num = file_num
             old_dir_size = dir_size
             time.sleep(600)
