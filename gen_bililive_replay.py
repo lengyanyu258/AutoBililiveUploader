@@ -315,8 +315,8 @@ class Session:
         total_time = sum([video.video_duration for video in self.videos])
 
         if len(self.videos) > 1:
-            start_time = os.stat(self.videos[-1].video_file_path).st_ctime
-            end_time = os.stat(self.videos[0].video_file_path).st_mtime
+            start_time = os.stat(self.videos[0].video_file_path).st_ctime
+            end_time = os.stat(self.videos[-1].video_file_path).st_mtime
             real_total_time = end_time - start_time
             percentage = decimal.Decimal(total_time / real_total_time * 100).quantize(
                 decimal.Decimal("1.00"), rounding="ROUND_HALF_UP"
@@ -423,10 +423,11 @@ class Session:
             f"PowerShell.exe"
             f" -File \"{self.output_paths['temp_ps1']}\""
             f" -ExecutionPolicy Bypass"
-            # f' >> "{self.output_paths["extras_log"]}" 2>&1'
+            f' >> "{self.output_paths["video_log"]}" 2>&1'
         )
-        print(powershell_command)
-        sp.run(powershell_command, shell=True, check=True)
+        # print(powershell_command)
+        # sp.run(powershell_command, shell=True, check=True)
+        await async_wait_output(powershell_command)
 
     async def gen_preparation(self):
         await self.process_xml()
