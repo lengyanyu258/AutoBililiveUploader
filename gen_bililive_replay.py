@@ -168,6 +168,8 @@ class Session:
             f" --graph \"{self.output_paths['he_graph']}\""
             f" --graph_figsize {width_multiple} 1"
             f" --graph_dpi {self.get_resolution()[0] // width_multiple}"
+            f" --graph_heat_color 5ba691"
+            f" --graph_normal_color 91d2be"
             f" --he_map \"{self.output_paths['he_file']}\""
             f" --sc_list \"{self.output_paths['sc_file']}\""
             f" --he_time \"{self.output_paths['he_pos']}\""
