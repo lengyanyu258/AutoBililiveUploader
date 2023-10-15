@@ -115,7 +115,7 @@ class Session:
             "ass": output_base_path + ".ass",
             "clean_xml": f"{output_base_path}{self.output_cache_mark}.clean.xml",
             "concat_file": f"{output_base_path}{self.output_cache_mark}.concat.txt",
-            "danmaku_video": output_base_path + ".bar.mp4",
+            "danmaku_video": output_base_path + ".bar.danmaku.mp4",
             "early_video": output_base_path + ".mp4",
             "extras_log": f"{output_base_path}{self.output_cache_mark}.extras.log",
             "he_file": output_base_path + ".he.txt",
@@ -313,8 +313,28 @@ class Session:
     async def process_video(self):
         # TODO: 将视频拆分为三份(1060显卡的上限)并行渲染
         gop = 5  # set GOP = 5s
-        avg_fps = sum([video.video_avg_fps for video in self.videos]) / len(self.videos)
-        total_time = sum([video.video_duration for video in self.videos])
+
+        if os.path.exists(self.output_paths["early_video"]):
+            video_data_str = await async_wait_output(
+                f"ffprobe -v error -show_entries format=duration"
+                f" -select_streams v:0 -show_entries stream=avg_frame_rate,bit_rate"
+                f' -of json "{self.output_paths["early_video"]}"'
+            )
+            json_data = json.loads(video_data_str[0])
+
+            total_time = float(json_data["format"]["duration"])
+            avg_fps = eval(json_data["streams"][0]["avg_frame_rate"])
+            avg_bitrate = float(json_data["streams"][0]["bit_rate"]) / 1000  # Kbps
+        else:
+            total_time = sum([video.video_duration for video in self.videos])
+            avg_fps = sum([video.video_avg_fps for video in self.videos]) / len(
+                self.videos
+            )
+            avg_bitrate = float(
+                sum([video.video_bit_rate for video in self.videos])
+                / len(self.videos)
+                / 1000
+            )  # Kbps
 
         if len(self.videos) > 1:
             start_time = os.stat(self.videos[0].video_file_path).st_ctime
@@ -330,12 +350,9 @@ class Session:
             print()
 
         # BiliBili now re-encode every video anyways
-        max_video_bitrate = float(8_000)  # Kbps
-        avg_bitrate = float(
-            sum([video.video_bit_rate for video in self.videos])
-            / len(self.videos)
-            / 1000
-        )  # Kbps
+        # max_video_bitrate = float(8_000)  # Kbps
+        max_video_bitrate = float(6_000)  # Kbps
+
         if RESULTS.no_limit:
             # NVENC 和 QSV 半斤八两，达到 X264 的质量需要增加 30% 的码率。(Ref: https://zhuanlan.zhihu.com/p/78829414)
             video_bitrate = int(avg_bitrate * 1.3)
@@ -459,7 +476,9 @@ class Session:
         self.__upload = True
         early_video = pathlib.Path(self.output_paths["early_video"])
         old_dirname = early_video.parent.parent
-        new_dirname = old_dirname.parent / f"{old_dirname.name} [Auto upload (Danmaku)]"
+        new_dirname = (
+            old_dirname.parent / f"{old_dirname.name} [Auto upload with Danmaku]"
+        )
         early_video.parent.rename(new_dirname)
         self.__new_dirname = new_dirname
         self.gen_output_paths(new_dirname)
