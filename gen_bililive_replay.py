@@ -646,7 +646,7 @@ if __name__ == "__main__":
         "-nw",
         "--no_watch",
         action="store_true",
-        help="Watching folder.",
+        help="Do not Watching folder.",
     )
     PARSER.add_argument(
         "-np",
