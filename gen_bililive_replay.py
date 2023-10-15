@@ -416,13 +416,16 @@ class Session:
         """
         filter_complex = filter_complex.replace("\n", "")
 
+        input_video = (
+            f"-i \"{self.output_paths['early_video']}\""
+            if early_video_exists
+            else f"-f concat -safe 0 -i \"{self.output_paths['concat_file']}\""
+        )
         ffmpeg_command = (
             f"ffmpeg -y"
             f" -t {total_time}"
             f" -i \"{self.output_paths['he_graph']}\""
-            f" -i \"{self.output_paths['early_video']}\""
-            if early_video_exists
-            else f" -f concat -safe 0 -i \"{self.output_paths['concat_file']}\""
+            f" {input_video}"
             f" -t {total_time}"
             f' -filter_complex "{filter_complex}" -map "[out_sub]" -map 1:a'
             f" -c:v h264_nvenc -preset slow -profile:v high -rc vbr -rc-lookahead 32 -temporal-aq 1"
@@ -472,10 +475,9 @@ class Session:
                 f"aliyunpan upload"
                 f' "{danmaku_video}"'
                 f' "{(self.__drive_dir / self.__new_dirname.name).as_posix()}"'
-                # f' >> "{new_extras_log.as_posix()}" 2>&1'
+                f' >> "{self.output_paths["extras_log"]}" 2>&1'
             )
-            print(upload_command)
-            sp.run(upload_command, shell=True, check=True)
+            await async_wait_output(upload_command)
 
     async def upload_aDrive(self):
         self.__upload = True
@@ -490,20 +492,16 @@ class Session:
         parent_dir = new_dirname.parent
         drive_dir = pathlib.PurePath("/", parent_dir.parent.name, parent_dir.name)
         self.__drive_dir = drive_dir
-        # extras_log = pathlib.PurePath(self.output_paths["extras_log"])
-        # new_extras_log = new_dirname / extras_log.name
         escaped_mark = self.output_cache_mark.replace(".", "\\.")
         upload_command = (
             f"aliyunpan upload"
             f' -exn "{escaped_mark}.+$"'
             f' "{new_dirname.as_posix()}"'
             f' "{drive_dir.as_posix()}"'
-            # f' >> "{new_extras_log.as_posix()}" 2>&1'
+            f' >> "{self.output_paths["extras_log"]}" 2>&1'
         )
-        # await async_wait_output(upload_command)
         # aliyunpan 本身具有计时功能
-        print(upload_command)
-        sp.run(upload_command, shell=True, check=True)
+        await async_wait_output(upload_command)
 
 
 def gen_replay(dir_path: pathlib.Path, filenames: list[pathlib.Path]):
