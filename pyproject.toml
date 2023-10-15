@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "auto-bililive-uploader"
-version = "1.1.6"
+version = "1.1.7"
 description = "自动压制並上传录播姬文件至网盘"
 authors = ["Shawn Sun <lengyanyu258@outlook.com>"]
 license = "GPL-3.0-or-later"

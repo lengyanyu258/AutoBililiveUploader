@@ -524,7 +524,7 @@ def gen_replay(dir_path: pathlib.Path, filenames: list[pathlib.Path]):
 
     if RESULTS.early_video or RESULTS.all:
         asyncio.run(session.gen_early_video())
-    if RESULTS.upload or RESULTS.all:
+    if RESULTS.upload:
         asyncio.run(session.upload_aDrive())
     if RESULTS.danmaku_video or RESULTS.all:
         asyncio.run(session.gen_danmaku_video())
