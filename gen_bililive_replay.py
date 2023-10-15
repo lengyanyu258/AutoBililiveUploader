@@ -314,7 +314,9 @@ class Session:
         # TODO: 将视频拆分为三份(1060显卡的上限)并行渲染
         gop = 5  # set GOP = 5s
 
+        early_video_exists = False
         if os.path.exists(self.output_paths["early_video"]):
+            early_video_exists = True
             video_data_str = await async_wait_output(
                 f"ffprobe -v error -show_entries format=duration"
                 f" -select_streams v:0 -show_entries stream=avg_frame_rate,bit_rate"
@@ -382,6 +384,9 @@ class Session:
         self.output_paths["he_graph"] = self.output_paths["he_graph"].replace(
             self.__anchor, self.__drive
         )
+        self.output_paths["early_video"] = self.output_paths["early_video"].replace(
+            self.__anchor, self.__drive
+        )
         self.generate_concat(True)
         self.output_paths["concat_file"] = self.output_paths["concat_file"].replace(
             self.__anchor, self.__drive
@@ -416,7 +421,7 @@ class Session:
             f" -t {total_time}"
             f" -i \"{self.output_paths['he_graph']}\""
             f" -i \"{self.output_paths['early_video']}\""
-            if os.path.exists(self.output_paths["early_video"])
+            if early_video_exists
             else f" -f concat -safe 0 -i \"{self.output_paths['concat_file']}\""
             f" -t {total_time}"
             f' -filter_complex "{filter_complex}" -map "[out_sub]" -map 1:a'
