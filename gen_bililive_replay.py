@@ -415,8 +415,9 @@ class Session:
             f"ffmpeg -y"
             f" -t {total_time}"
             f" -i \"{self.output_paths['he_graph']}\""
-            f" -f concat -safe 0"
-            f" -i \"{self.output_paths['concat_file']}\""
+            f" -i \"{self.output_paths['early_video']}\""
+            if os.path.exists(self.output_paths["early_video"])
+            else f" -f concat -safe 0 -i \"{self.output_paths['concat_file']}\""
             f" -t {total_time}"
             f' -filter_complex "{filter_complex}" -map "[out_sub]" -map 1:a'
             f" -c:v h264_nvenc -preset slow -profile:v high -rc vbr -rc-lookahead 32 -temporal-aq 1"
@@ -425,8 +426,7 @@ class Session:
             f" -b:v {video_bitrate}K -maxrate:v {max_video_bitrate}K -bufsize:v {video_bitrate * 2}K"
             f" -qmin 0 -g {int(avg_fps * gop)}"
             # advised by uploader webpage tips
-            f" -b:a 320K -ar 48000"
-            f" \"{self.output_paths['danmaku_video']}\""
+            f" -b:a 320K -ar 48000 \"{self.output_paths['danmaku_video']}\""
             # f' >> "{self.output_paths["video_log"]}" 2>&1'
         )
         powershell_command = f"Measure-Command {{ {ffmpeg_command} | Out-Host }}"
