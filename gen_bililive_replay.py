@@ -326,17 +326,17 @@ class Session:
 
             total_time = float(json_data["format"]["duration"])
             avg_fps = eval(json_data["streams"][0]["avg_frame_rate"])
-            avg_bitrate = float(json_data["streams"][0]["bit_rate"]) / 1000  # Kbps
+            # avg_bitrate = float(json_data["streams"][0]["bit_rate"]) / 1000  # Kbps
         else:
             total_time = sum([video.video_duration for video in self.videos])
             avg_fps = sum([video.video_avg_fps for video in self.videos]) / len(
                 self.videos
             )
-            avg_bitrate = float(
-                sum([video.video_bit_rate for video in self.videos])
-                / len(self.videos)
-                / 1000
-            )  # Kbps
+            # avg_bitrate = float(
+            #     sum([video.video_bit_rate for video in self.videos])
+            #     / len(self.videos)
+            #     / 1000
+            # )  # Kbps
 
         if len(self.videos) > 1:
             start_time = os.stat(self.videos[0].video_file_path).st_ctime
@@ -352,28 +352,25 @@ class Session:
             print()
 
         # BiliBili now re-encode every video anyways
-        # max_video_bitrate = float(8_000)  # Kbps
-        max_video_bitrate = float(6_000)  # Kbps
+        max_video_bitrate = float(8_000)  # Kbps
 
-        if RESULTS.no_limit:
-            # NVENC 和 QSV 半斤八两，达到 X264 的质量需要增加 30% 的码率。(Ref: https://zhuanlan.zhihu.com/p/78829414)
-            video_bitrate = int(avg_bitrate * 1.3)
-            max_video_bitrate = max(max_video_bitrate, video_bitrate)
-        else:
-            # 如果需要完整上传 B 站
-            max_size = 8 * 1024 * 1024 * 8  # Kbps
-            # min_video_bitrate = float(6000)  # for 1080p, see uploader webpage tips
-            # <del>由于网页端限制的 8G = 8192 M > 8e9 B ≈ 7,629 MiB 且有充足的裕量，
-            # 故不必针对 audio bitrate & muxing overhead 作出修正</del>
-            max_size -= 320  # Audio rate
-            video_bitrate = int(max_size / total_time)
-            min_video_bitrate = min(
-                max_video_bitrate, video_bitrate, int(avg_bitrate * 1.3)
-            )
-            # 如果使用在大小限制下的“极限”码率，则禁用 -maxrate 选项
-            if min_video_bitrate == video_bitrate:
-                max_video_bitrate = min_video_bitrate
-            video_bitrate = min_video_bitrate
+        # 如果需要完整上传 B 站
+        # max_size = 32 * 1024 * 1024 * 8  # 32GB
+        max_size = 8 * 1024 * 1024 * 8  # Kbps
+        # min_video_bitrate = float(6000)  # for 1080p, see uploader webpage tips
+        # <del>由于网页端限制的 8G = 8192 M > 8e9 B ≈ 7,629 MiB 且有充足的裕量，
+        # 故不必针对 audio bitrate & muxing overhead 作出修正</del>
+        max_size -= 320  # Audio rate
+        video_bitrate = int(max_size / total_time)
+        # NVENC 和 QSV 半斤八两，达到 X264 的质量需要增加 30% 的码率。(Ref: https://zhuanlan.zhihu.com/p/78829414)
+        # 但由于增加了弹幕因素，所以在原视频码率的基础上需要更多的码率
+        # 然而每个视频的弹幕或多或少无法估计，所以这里一股脑采用“极限”码率
+        # min_video_bitrate = min(max_video_bitrate, video_bitrate, int(avg_bitrate * 1.3))
+        min_video_bitrate = min(max_video_bitrate, video_bitrate)
+        # 如果使用在大小限制下的“极限”码率，则禁用 -maxrate 选项
+        if min_video_bitrate == video_bitrate:
+            max_video_bitrate = min_video_bitrate
+        video_bitrate = min_video_bitrate
 
         ass_path = pathlib.PurePath(self.output_paths["ass"])
         self.__anchor = ass_path.parents[-3].as_posix()
@@ -417,9 +414,15 @@ class Session:
         filter_complex = filter_complex.replace("\n", "")
 
         input_video = (
-            f"-i \"{self.output_paths['early_video']}\""
+            f" -i \"{self.output_paths['early_video']}\""
             if early_video_exists
             else f"-f concat -safe 0 -i \"{self.output_paths['concat_file']}\""
+        )
+        output_video_options = (
+            f" -preset p3 -cq 28"
+            if RESULTS.no_limit
+            else f" -preset slow"
+            f" -b:v {video_bitrate}K -maxrate:v {max_video_bitrate}K -bufsize:v {video_bitrate * 2}K"
         )
         ffmpeg_command = (
             f"ffmpeg -y"
@@ -428,13 +431,12 @@ class Session:
             f" {input_video}"
             f" -t {total_time}"
             f' -filter_complex "{filter_complex}" -map "[out_sub]" -map 1:a'
-            f" -c:v h264_nvenc -preset slow -profile:v high -rc vbr -rc-lookahead 32 -temporal-aq 1"
+            f" -c:v h264_nvenc {output_video_options}"
+            f" -profile:v high -rc vbr -rc-lookahead 32 -temporal-aq 1"
             f" -coder cabac -bf 3 -b_ref_mode middle -multipass fullres"
-            # 由于 B 站二次压缩的原画码率为 10_000，故使用经计算后的码率最为接近原码率。
-            f" -b:v {video_bitrate}K -maxrate:v {max_video_bitrate}K -bufsize:v {video_bitrate * 2}K"
             f" -qmin 0 -g {int(avg_fps * gop)}"
             # advised by uploader webpage tips
-            f" -b:a 320K -ar 48000 \"{self.output_paths['danmaku_video']}\""
+            f" -c:a copy \"{self.output_paths['danmaku_video']}\""
             # f' >> "{self.output_paths["video_log"]}" 2>&1'
         )
         powershell_command = f"Measure-Command {{ {ffmpeg_command} | Out-Host }}"
