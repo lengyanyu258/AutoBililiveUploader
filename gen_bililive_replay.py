@@ -272,7 +272,7 @@ class Session:
             f" --displayarea 1.0 --scrollarea 1.0"
             f""
             f" --showusernames FALSE --showmsgbox TRUE"
-            f" --msgboxsize {video_res_x // 5 - 10}x{video_res_y - 10}"
+            f" --msgboxsize {video_res_x // 6 - 10}x{video_res_y - 10}"
             f" --msgboxpos 5x5"
             f" --msgboxfontsize {msgboxfontsize}"
             f" --msgboxduration 0.00"
@@ -312,6 +312,7 @@ class Session:
 
     async def process_video(self):
         # TODO: 将视频拆分为三份(1060显卡的上限)并行渲染
+        # **当 input 为 mp4 时，ffmpeg 能跑满显卡，所以不用拆分了。
         gop = 5  # set GOP = 5s
 
         early_video_exists = False
@@ -319,7 +320,7 @@ class Session:
             early_video_exists = True
             video_data_str = await async_wait_output(
                 f"ffprobe -v error -show_entries format=duration"
-                f" -select_streams v:0 -show_entries stream=avg_frame_rate,bit_rate"
+                f" -show_entries stream=avg_frame_rate,bit_rate"
                 f' -of json "{self.output_paths["early_video"]}"'
             )
             json_data = json.loads(video_data_str[0])
@@ -327,6 +328,8 @@ class Session:
             total_time = float(json_data["format"]["duration"])
             avg_fps = eval(json_data["streams"][0]["avg_frame_rate"])
             # avg_bitrate = float(json_data["streams"][0]["bit_rate"]) / 1000  # Kbps
+            # "bit_rate": "255936"
+            audio_bit_rate = float(json_data["streams"][1]["bit_rate"]) / 1000
         else:
             total_time = sum([video.video_duration for video in self.videos])
             avg_fps = sum([video.video_avg_fps for video in self.videos]) / len(
@@ -337,6 +340,7 @@ class Session:
             #     / len(self.videos)
             #     / 1000
             # )  # Kbps
+            audio_bit_rate = 320
 
         if len(self.videos) > 1:
             start_time = os.stat(self.videos[0].video_file_path).st_ctime
@@ -352,7 +356,9 @@ class Session:
             print()
 
         # BiliBili now re-encode every video anyways
-        max_video_bitrate = float(8_000)  # Kbps
+        # max_video_bitrate = float(8_000)  # Kbps
+        # 老千的弹幕并不多，所以码率压低一些（2333
+        max_video_bitrate = float(6_000)  # Kbps
 
         # 如果需要完整上传 B 站
         # max_size = 32 * 1024 * 1024 * 8  # 32GB
@@ -360,11 +366,13 @@ class Session:
         # min_video_bitrate = float(6000)  # for 1080p, see uploader webpage tips
         # <del>由于网页端限制的 8G = 8192 M > 8e9 B ≈ 7,629 MiB 且有充足的裕量，
         # 故不必针对 audio bitrate & muxing overhead 作出修正</del>
-        max_size -= 320  # Audio rate
         video_bitrate = int(max_size / total_time)
+        video_bitrate -= audio_bit_rate  # Audio rate
         # NVENC 和 QSV 半斤八两，达到 X264 的质量需要增加 30% 的码率。(Ref: https://zhuanlan.zhihu.com/p/78829414)
         # 但由于增加了弹幕因素，所以在原视频码率的基础上需要更多的码率
         # 然而每个视频的弹幕或多或少无法估计，所以这里一股脑采用“极限”码率
+        # TODO: 使用弹幕字数来估计需要用到的码率（接近为 0 时为 1.3 倍码率）
+        # 或者是试试直接用原码率进行 HEVC 的编码。
         # min_video_bitrate = min(max_video_bitrate, video_bitrate, int(avg_bitrate * 1.3))
         min_video_bitrate = min(max_video_bitrate, video_bitrate)
         # 如果使用在大小限制下的“极限”码率，则禁用 -maxrate 选项
@@ -413,6 +421,7 @@ class Session:
         """
         filter_complex = filter_complex.replace("\n", "")
 
+        # 使用 mp4 文件能显著提升压制速度（占满显卡）
         input_video = (
             f" -i \"{self.output_paths['early_video']}\""
             if early_video_exists
@@ -435,7 +444,6 @@ class Session:
             f" -profile:v high -rc vbr -rc-lookahead 32 -temporal-aq 1"
             f" -coder cabac -bf 3 -b_ref_mode middle -multipass fullres"
             f" -qmin 0 -g {int(avg_fps * gop)}"
-            # advised by uploader webpage tips
             f" -c:a copy \"{self.output_paths['danmaku_video']}\""
             # f' >> "{self.output_paths["video_log"]}" 2>&1'
         )
