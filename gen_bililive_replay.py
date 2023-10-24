@@ -16,16 +16,17 @@ from typing import Optional, List
 
 if platform.system().lower() == "windows":
     BINARY_PATH_DRIVE = pathlib.PurePath("D:/")
+    BINARY_PATH_RELATIVE_TO_DRIVE = pathlib.PurePath(
+        "Users/Shawn/Source/Repos/lengyanyu258/DanmakuFactory",
+    )
     BINARY_PATH_EXE = pathlib.PurePath("bin/DanmakuFactory.exe")
+    BINARY_PATH = os.fspath(
+        BINARY_PATH_DRIVE / BINARY_PATH_RELATIVE_TO_DRIVE / BINARY_PATH_EXE
+    )
 else:
-    BINARY_PATH_DRIVE = pathlib.PurePath("/mnt/d/")
-    BINARY_PATH_EXE = pathlib.PurePath("DanmakuFactory")
-BINARY_PATH_RELATIVE_TO_DRIVE = pathlib.PurePath(
-    "Users/Shawn/Source/Repos/hihkm/DanmakuFactory",
-)
-BINARY_PATH = os.fspath(
-    BINARY_PATH_DRIVE / BINARY_PATH_RELATIVE_TO_DRIVE / BINARY_PATH_EXE
-)
+    BINARY_PATH = (
+        pathlib.Path("~/Github/DanmakuFactory/DanmakuFactory").expanduser().as_posix()
+    )
 
 
 async def async_wait_output(command):
@@ -92,7 +93,7 @@ class Session:
         self.videos = []
         self.he_time = None
         self.output_paths = {}
-        self.output_mark = "all"
+        self.output_mark = "ALL"
         self.output_cache_mark = ".cache"
 
     async def add_video(self, video: Video):
@@ -105,7 +106,9 @@ class Session:
         self.videos += [video]
 
     def gen_output_paths(self, output_dir: pathlib.Path | None = None):
-        output_path = pathlib.Path(f"{self.videos[0].base_path}.{self.output_mark}")
+        output_path = pathlib.Path(
+            f"{self.videos[0].base_path.replace('-001','')}-{self.output_mark}"
+        )
         if not output_dir:
             output_dir = output_path.parent / self.output_mark
             output_dir.mkdir(parents=False, exist_ok=True)
@@ -113,21 +116,21 @@ class Session:
 
         self.output_paths = {
             "ass": output_base_path + ".ass",
+            "danmaku_video": output_base_path + ".danmaku_bar.mp4",
+            "early_video": output_base_path + ".mp4",
+            "he_file": output_base_path + ".he.txt",
+            "sc_file": output_base_path + ".sc.txt",
+            "sc_srt": output_base_path + ".sc.srt",
+            "thumbnail": output_base_path + ".thumb.png",
+            "xml": output_base_path + ".xml",
             "clean_xml": f"{output_base_path}{self.output_cache_mark}.clean.xml",
             "concat_file": f"{output_base_path}{self.output_cache_mark}.concat.txt",
-            "danmaku_video": output_base_path + ".bar.danmaku.mp4",
-            "early_video": output_base_path + ".mp4",
             "extras_log": f"{output_base_path}{self.output_cache_mark}.extras.log",
-            "he_file": output_base_path + ".he.txt",
             "he_graph": f"{output_base_path}{self.output_cache_mark}.he.png",
             "he_pos": f"{output_base_path}{self.output_cache_mark}.he_pos.txt",
             "he_range": f"{output_base_path}{self.output_cache_mark}.he_range.txt",
-            "sc_file": output_base_path + ".sc.txt",
-            "sc_srt": output_base_path + ".sc.srt",
             "temp_ps1": f"{output_base_path}{self.output_cache_mark}.temp.ps1",
-            "thumbnail": output_base_path + ".thumb.png",
             "video_log": f"{output_base_path}{self.output_cache_mark}.video.log",
-            "xml": output_base_path + ".xml",
         }
 
     async def merge_xml(self):
@@ -357,17 +360,18 @@ class Session:
 
         # BiliBili now re-encode every video anyways
         # max_video_bitrate = float(8_000)  # Kbps
-        # 老千的弹幕并不多，所以码率压低一些（2333
-        max_video_bitrate = float(6_000)  # Kbps
+        # 老千的弹幕并不多，所以码率压低一些（2333，4000 够用了）
+        max_video_bitrate = float(4_000)  # Kbps
 
         # 如果需要完整上传 B 站
         # max_size = 32 * 1024 * 1024 * 8  # 32GB
-        max_size = 8 * 1024 * 1024 * 8  # Kbps
+        max_size = 8 * 1024 * 1024 * 1024 * 8 / 1000  # Kb(internet)
         # min_video_bitrate = float(6000)  # for 1080p, see uploader webpage tips
         # <del>由于网页端限制的 8G = 8192 M > 8e9 B ≈ 7,629 MiB 且有充足的裕量，
         # 故不必针对 audio bitrate & muxing overhead 作出修正</del>
-        video_bitrate = int(max_size / total_time)
-        video_bitrate -= audio_bit_rate  # Audio rate
+        # 由于有 bufsize = video_bitrate * 2，足以产生一些裕量，
+        # 故不必针对 muxing overhead 作出修正
+        video_bitrate = int(max_size / total_time - audio_bit_rate)  # Kbps
         # NVENC 和 QSV 半斤八两，达到 X264 的质量需要增加 30% 的码率。(Ref: https://zhuanlan.zhihu.com/p/78829414)
         # 但由于增加了弹幕因素，所以在原视频码率的基础上需要更多的码率
         # 然而每个视频的弹幕或多或少无法估计，所以这里一股脑采用“极限”码率
@@ -493,9 +497,7 @@ class Session:
         self.__upload = True
         early_video = pathlib.Path(self.output_paths["early_video"])
         old_dirname = early_video.parent.parent
-        new_dirname = (
-            old_dirname.parent / f"{old_dirname.name} [Auto upload with Danmaku]"
-        )
+        new_dirname = old_dirname.parent / f"{old_dirname.name} [Auto upload]"
         early_video.parent.rename(new_dirname)
         self.__new_dirname = new_dirname
         self.gen_output_paths(new_dirname)
@@ -563,7 +565,14 @@ def watching_dir(
                 active_file = sorted(all_files, key=lambda f: f.stat().st_mtime)[-1]
                 new_active_dir = active_file.parent
                 if new_active_dir.name.split("-")[0] == active_dir.name.split("-")[0]:
+                    print(
+                        "Rename Title from",
+                        active_dir.name.split("-")[-1],
+                        "to",
+                        new_active_dir.name.split("-")[-1],
+                    )
                     for child in active_dir.iterdir():
+                        print("rename", child.name)
                         child.rename(new_active_dir / child.name)
                     active_dir.rmdir()
                     active_dir = new_active_dir
