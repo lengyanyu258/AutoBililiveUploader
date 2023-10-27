@@ -116,12 +116,12 @@ class Session:
 
         self.output_paths = {
             "ass": output_base_path + ".ass",
-            "danmaku_video": output_base_path + ".danmaku_bar.mp4",
+            # "danmaku_video": os.fspath(output_dir / f"【弹幕高能版】{output_path.name}.mp4"),
+            "danmaku_video": output_base_path + "（弹幕高能版）.mp4",
             "early_video": output_base_path + ".mp4",
-            "he_file": output_base_path + ".he.txt",
-            "sc_file": output_base_path + ".sc.txt",
-            "sc_srt": output_base_path + ".sc.srt",
-            "thumbnail": output_base_path + ".thumb.png",
+            "he_file": output_base_path + ".高能.txt",
+            "sc_file": output_base_path + ".SC.txt",
+            "thumbnail": output_base_path + ".thumbnail.png",
             "xml": output_base_path + ".xml",
             "clean_xml": f"{output_base_path}{self.output_cache_mark}.clean.xml",
             "concat_file": f"{output_base_path}{self.output_cache_mark}.concat.txt",
@@ -129,6 +129,7 @@ class Session:
             "he_graph": f"{output_base_path}{self.output_cache_mark}.he.png",
             "he_pos": f"{output_base_path}{self.output_cache_mark}.he_pos.txt",
             "he_range": f"{output_base_path}{self.output_cache_mark}.he_range.txt",
+            "sc_srt": f"{output_base_path}{self.output_cache_mark}.SC.srt",
             "temp_ps1": f"{output_base_path}{self.output_cache_mark}.temp.ps1",
             "video_log": f"{output_base_path}{self.output_cache_mark}.video.log",
         }
