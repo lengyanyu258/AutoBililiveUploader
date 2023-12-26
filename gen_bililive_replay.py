@@ -14,6 +14,8 @@ from typing import Optional, List
 
 # Reference: https://github.com/valkjsaaa/auto-bilibili-recorder/blob/master/session.py 2023年6月7日
 
+EXT = "m3u8"
+
 if platform.system().lower() == "windows":
     BINARY_PATH_DRIVE = pathlib.PurePath("D:/")
     BINARY_PATH_RELATIVE_TO_DRIVE = pathlib.PurePath(
@@ -30,7 +32,7 @@ else:
 
 
 async def async_wait_output(command):
-    print(f"running: {command}\n")
+    print(f"{time.ctime(time.time())}, running: {command}\n")
     sys.stdout.flush()
     process = await asyncio.create_subprocess_shell(
         command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
@@ -97,12 +99,12 @@ class Session:
         self.output_cache_mark = ".cache"
 
     async def add_video(self, video: Video):
-        try:
-            await video.query_meta()
-        except ValueError:
-            print(traceback.format_exc())
-            print(f"video corrupted, skipping: {video.video_file_path}\n")
-            return
+        # try:
+        #     await video.query_meta()
+        # except ValueError:
+        #     print(traceback.format_exc())
+        #     print(f"video corrupted, skipping: {video.video_file_path}\n")
+        #     return
         self.videos += [video]
 
     def gen_output_paths(self, output_dir: pathlib.Path | None = None):
@@ -148,7 +150,7 @@ class Session:
             f"python -m danmaku_tools.merge_danmaku"
             f' "{self.output_paths["temp_ps1"]}"'
             f" --offset_time -6"
-            f' --video_time ".flv"'
+            f' --video_time ".{EXT}"'
             f" --output \"{self.output_paths['xml']}\""
             f" >> \"{self.output_paths['extras_log']}\" 2>&1"
         )
@@ -298,17 +300,18 @@ class Session:
             print(f'{self.output_paths["early_video"]} exists, skip!\n')
             return
 
-        ref_video_res = self.videos[0].video_resolution
-        for video in self.videos:
-            if video.video_resolution != ref_video_res:
-                print("format check failed!\n")
-                return
+        # ref_video_res = self.videos[0].video_resolution
+        # for video in self.videos:
+        #     if video.video_resolution != ref_video_res:
+        #         print("format check failed!\n")
+        #         return
 
         ffmpeg_command = (
             f"ffmpeg -y"
             f" -f concat -safe 0"
             f" -i \"{self.output_paths['concat_file']}\""
-            f" -c copy"
+            f" -codec copy"
+            # f" -bsf:v filter_units=remove_types=12"
             f" \"{self.output_paths['early_video']}\""
             f" >> \"{self.output_paths['video_log']}\" 2>&1"
         )
@@ -472,12 +475,48 @@ class Session:
         await async_wait_output(powershell_command)
 
     async def gen_preparation(self):
-        await self.process_xml()
-        await self.process_danmaku()
-        await self.process_thumbnail()
+        # await self.process_xml()
+        # await self.process_danmaku()
+        # await self.process_thumbnail()
         self.generate_concat()
 
     async def gen_early_video(self):
+        videos_path: list[str] = []
+        file_path = pathlib.PurePath(self.output_paths["early_video"])
+        self.__anchor = file_path.parents[-3].as_posix()
+        self.__drive = f"{file_path.parts[2].upper()}:"
+
+        if len(self.videos) > 1:
+            for i, video in enumerate(self.videos):
+                videos_path.append(
+                    f"{self.output_paths['early_video'].replace(self.__anchor, self.__drive)}{self.output_cache_mark}.{i}.mp4"
+                )
+                ffmpeg_command = (
+                    f"ffmpeg.exe -y"
+                    f' -i "{video.video_file_path.replace(self.__anchor, self.__drive)}"'
+                    f" -codec copy"
+                    f" -bsf:v filter_units=remove_types=12"
+                    f' "{videos_path[-1]}"'
+                    f" >> \"{self.output_paths['video_log']}\" 2>&1"
+                )
+                await async_wait_output(ffmpeg_command)
+        else:
+            videos_path.append(
+                self.videos[0].video_file_path.replace(self.__anchor, self.__drive)
+            )
+
+        concat_text = "\n".join(
+            [
+                f"file '{video.replace(self.__drive, self.__anchor)}'"
+                for video in videos_path
+            ]
+        )
+
+        with open(
+            file=self.output_paths["concat_file"], mode="w", encoding="utf-8"
+        ) as concat_file:
+            concat_file.write(concat_text)
+
         await self.process_early_video()
 
     async def gen_danmaku_video(self):
@@ -498,6 +537,7 @@ class Session:
         self.__upload = True
         early_video = pathlib.Path(self.output_paths["early_video"])
         old_dirname = early_video.parent.parent
+        # TODO: 有 Danmaku 时文件夹名称添加 with Danmaku 后缀
         new_dirname = old_dirname.parent / f"{old_dirname.name} [Auto upload]"
         early_video.parent.rename(new_dirname)
         self.__new_dirname = new_dirname
@@ -516,6 +556,16 @@ class Session:
         # aliyunpan 本身具有计时功能
         await async_wait_output(upload_command)
 
+        upload_command = (
+            f"BaiduPCS-Go upload"
+            # f" --norapid --nosplit"
+            f' "{old_dirname.as_posix()}"'
+            f' "{drive_dir.as_posix()}"'
+            f' >> "{self.output_paths["extras_log"]}" 2>&1'
+        )
+        # BaiduPCS-Go 本身具有计时功能
+        await async_wait_output(upload_command)
+
 
 def gen_replay(dir_path: pathlib.Path, filenames: list[pathlib.Path]):
     print("Generating:", dir_path.as_posix())
@@ -532,8 +582,8 @@ def gen_replay(dir_path: pathlib.Path, filenames: list[pathlib.Path]):
     if not any(session.output_paths):
         session.gen_output_paths()
 
-    if not RESULTS.no_preparation or RESULTS.all:
-        asyncio.run(session.gen_preparation())
+    # if not RESULTS.no_preparation or RESULTS.all:
+    #     asyncio.run(session.gen_preparation())
 
     if RESULTS.early_video or RESULTS.all:
         asyncio.run(session.gen_early_video())
@@ -553,11 +603,11 @@ def watching_dir(
         )
         old_dir_size = active_dir_size
         time.sleep(90)
-        active_files = list(active_dir.glob("*.flv"))
+        active_files = list(active_dir.glob(f"*.{EXT}"))
         active_dir_size = sum([file.stat().st_size for file in active_files])
         if old_dir_size == active_dir_size:
             active_file_num = len(active_files)
-            all_files = list(active_dir.parent.rglob("*.flv"))
+            all_files = list(active_dir.parent.rglob(f"*.{EXT}"))
             if len(all_files) == old_file_num + active_file_num:
                 gen_replay(active_dir, active_files)
                 return
@@ -565,33 +615,29 @@ def watching_dir(
                 # 修改了标题
                 active_file = sorted(all_files, key=lambda f: f.stat().st_mtime)[-1]
                 new_active_dir = active_file.parent
-                if new_active_dir.name.split("-")[0] == active_dir.name.split("-")[0]:
-                    print(
-                        "Rename Title from",
-                        active_dir.name.split("-")[-1],
-                        "to",
-                        new_active_dir.name.split("-")[-1],
-                    )
-                    for child in active_dir.iterdir():
-                        print("rename", child.name)
-                        child.rename(new_active_dir / child.name)
-                    active_dir.rmdir()
-                    active_dir = new_active_dir
-                else:
-                    gen_replay(active_dir, active_files)
-                    watching_dir(
-                        new_active_dir,
-                        old_file_num + active_file_num,
-                        0,
-                        active_file.stat().st_size,
-                    )
-                    return
+                # if new_active_dir.name.split("-")[0] == active_dir.name.split("-")[0]:
+                print(f'Rename Title "{active_dir.name}" -> "{new_active_dir.name}"')
+                for child in active_dir.iterdir():
+                    print("R", child.name)
+                    child.rename(new_active_dir / child.name)
+                active_dir.rmdir()
+                active_dir = new_active_dir
+                active_dir_size += active_file.stat().st_size
+                # else:
+                #     gen_replay(active_dir, active_files)
+                #     watching_dir(
+                #         new_active_dir,
+                #         old_file_num + active_file_num,
+                #         0,
+                #         active_file.stat().st_size,
+                #     )
+                #     return
 
 
 def waiting_dir(dir_path: pathlib.Path, old_file_num: int, old_dir_size: int):
     print("Monitoring:", dir_path.as_posix())
     while True:
-        filenames = list(dir_path.rglob("*.flv"))
+        filenames = list(dir_path.rglob(f"*.{EXT}"))
         file_num = len(filenames)
         dir_size = sum([filename.stat().st_size for filename in filenames])
         print(f"{time.ctime(time.time())}, file_num: {file_num}, dir_size: {dir_size}")
@@ -602,7 +648,7 @@ def waiting_dir(dir_path: pathlib.Path, old_file_num: int, old_dir_size: int):
         else:
             active_file = sorted(filenames, key=lambda f: f.stat().st_mtime)[-1]
             active_dir = active_file.parent
-            active_files = list(active_dir.glob("*.flv"))
+            active_files = list(active_dir.glob(f"*.{EXT}"))
             active_file_num = len(active_files)
             active_dir_size = sum([file.stat().st_size for file in active_files])
             watching_dir(active_dir, file_num - active_file_num, 0, active_dir_size)
@@ -612,11 +658,11 @@ def waiting_dir(dir_path: pathlib.Path, old_file_num: int, old_dir_size: int):
 def main(dir_path: pathlib.Path):
     print(f"{dir_path.as_posix()}:")
     if RESULTS.no_watch:
-        gen_replay(dir_path, list(dir_path.glob("*.flv")))
+        gen_replay(dir_path, list(dir_path.glob(f"*.{EXT}")))
     else:
         while True:
             # Generator will lost after being used. So we use list() to expand.
-            filenames = list(dir_path.rglob("*.flv"))
+            filenames = list(dir_path.rglob(f"*.{EXT}"))
             old_file_num = len(filenames)
             old_dir_size = sum([filename.stat().st_size for filename in filenames])
             print(
@@ -640,7 +686,7 @@ if __name__ == "__main__":
     )
     PARSER.add_argument(
         "dir_path",
-        help="flv videos generated by BililiveRecorder directory path.",
+        help=f"{EXT} videos generated by BililiveRecorder directory path.",
     )
     PARSER.add_argument(
         "-a",
