@@ -1,0 +1,232 @@
+[
+    {
+        "EventType": "StreamStarted",
+        "EventTimestamp": "2023-12-31T15:30:09.3853354+08:00",
+        "EventId": "838ee8c0-e885-4c88-a1d4-6642379a57cf",
+        "EventData": {
+            "RoomId": 21738461,
+            "ShortId": 1231,
+            "Name": "哔哩哔哩晚会",
+            "Title": "2023最美的夜 bilibili晚会",
+            "AreaNameParent": "娱乐",
+            "AreaNameChild": "视频聊天",
+            "Recording": true,
+            "Streaming": true,
+            "DanmakuConnected": true
+        }
+    },
+    {
+        "EventType": "SessionStarted",
+        "EventTimestamp": "2023-12-31T15:30:21.8703914+08:00",
+        "EventId": "91df1aa3-e14e-4d6d-898e-6fc0202b3280",
+        "EventData": {
+            "SessionId": "cf59a4e6-cb2e-4a2e-a889-2b0d200062a7",
+            "RoomId": 21738461,
+            "ShortId": 1231,
+            "Name": "哔哩哔哩晚会",
+            "Title": "2023最美的夜 bilibili晚会",
+            "AreaNameParent": "娱乐",
+            "AreaNameChild": "视频聊天",
+            "Recording": true,
+            "Streaming": true,
+            "DanmakuConnected": true
+        }
+    },
+    {
+        "EventType": "FileOpening",
+        "EventTimestamp": "2023-12-31T15:30:22.415894+08:00",
+        "EventId": "cf5bc248-b406-4a25-9562-63f7d7af228e",
+        "EventData": {
+            "SessionId": "cf59a4e6-cb2e-4a2e-a889-2b0d200062a7",
+            "RelativePath": "489412051-21738461-哔哩哔哩晚会/20231231_153007-娱乐-视频聊天-2023最美的夜 bilibili晚会/20231231_153022_154-高清-001.flv",
+            "FileOpenTime": "2023-12-31T15:30:22.4031708+08:00",
+            "RoomId": 21738461,
+            "ShortId": 1231,
+            "Name": "哔哩哔哩晚会",
+            "Title": "2023最美的夜 bilibili晚会",
+            "AreaNameParent": "娱乐",
+            "AreaNameChild": "视频聊天",
+            "Recording": true,
+            "Streaming": true,
+            "DanmakuConnected": true
+        }
+    },
+    {
+        "EventType": "FileClosed",
+        "EventTimestamp": "2023-12-31T23:21:53.8574584+08:00",
+        "EventId": "f3ea0e61-c713-471d-b098-1bc4469c8171",
+        "EventData": {
+            "SessionId": "cf59a4e6-cb2e-4a2e-a889-2b0d200062a7",
+            "RelativePath": "489412051-21738461-哔哩哔哩晚会/20231231_153007-娱乐-视频聊天-2023最美的夜 bilibili晚会/20231231_153022_154-高清-001.flv",
+            "FileSize": 4290513040,
+            "Duration": 28292.986,
+            "FileOpenTime": "2023-12-31T15:30:22.4031708+08:00",
+            "FileCloseTime": "2023-12-31T23:21:53.8386904+08:00",
+            "RoomId": 21738461,
+            "ShortId": 1231,
+            "Name": "哔哩哔哩晚会",
+            "Title": "2023最美的夜 bilibili晚会",
+            "AreaNameParent": "大事件",
+            "AreaNameChild": "跨年晚会",
+            "Recording": true,
+            "Streaming": true,
+            "DanmakuConnected": true
+        }
+    },
+    {
+        "EventType": "FileOpening",
+        "EventTimestamp": "2023-12-31T23:21:53.8574584+08:00",
+        "EventId": "707ac45d-d29f-44d8-b1b5-fa4c1531d0f8",
+        "EventData": {
+            "SessionId": "cf59a4e6-cb2e-4a2e-a889-2b0d200062a7",
+            "RelativePath": "489412051-21738461-哔哩哔哩晚会/20231231_153007-大事件-跨年晚会-2023最美的夜 bilibili晚会/20231231_232153_851-高清-002.flv",
+            "FileOpenTime": "2023-12-31T23:21:53.8564609+08:00",
+            "RoomId": 21738461,
+            "ShortId": 1231,
+            "Name": "哔哩哔哩晚会",
+            "Title": "2023最美的夜 bilibili晚会",
+            "AreaNameParent": "大事件",
+            "AreaNameChild": "跨年晚会",
+            "Recording": true,
+            "Streaming": true,
+            "DanmakuConnected": true
+        }
+    },
+    {
+        "EventType": "StreamEnded",
+        "EventTimestamp": "2024-01-01T00:30:01.479317+08:00",
+        "EventId": "583fb691-0f2b-46b9-81e9-efb0eba5724d",
+        "EventData": {
+            "RoomId": 21738461,
+            "ShortId": 1231,
+            "Name": "哔哩哔哩晚会",
+            "Title": "2023最美的夜 bilibili晚会",
+            "AreaNameParent": "大事件",
+            "AreaNameChild": "跨年晚会",
+            "Recording": true,
+            "Streaming": false,
+            "DanmakuConnected": true
+        }
+    },
+    {
+        "EventType": "FileClosed",
+        "EventTimestamp": "2024-01-01T16:13:26.1895822+08:00",
+        "EventId": "e0f1b719-b330-4c2a-a653-68c79dee2ac5",
+        "EventData": {
+            "SessionId": "cf59a4e6-cb2e-4a2e-a889-2b0d200062a7",
+            "RelativePath": "489412051-21738461-哔哩哔哩晚会/20231231_153007-大事件-跨年晚会-2023最美的夜 bilibili晚会/20231231_232153_851-高清-002.flv",
+            "FileSize": 4290816387,
+            "Duration": 60692.977,
+            "FileOpenTime": "2023-12-31T23:21:53.8564609+08:00",
+            "FileCloseTime": "2024-01-01T16:13:26.1865897+08:00",
+            "RoomId": 21738461,
+            "ShortId": 1231,
+            "Name": "哔哩哔哩晚会",
+            "Title": "2023最美的夜 bilibili晚会",
+            "AreaNameParent": "大事件",
+            "AreaNameChild": "跨年晚会",
+            "Recording": true,
+            "Streaming": false,
+            "DanmakuConnected": true
+        }
+    },
+    {
+        "EventType": "FileOpening",
+        "EventTimestamp": "2024-01-01T16:13:26.1975608+08:00",
+        "EventId": "b6a0ebfa-3adc-4c81-a5b1-325613df23b4",
+        "EventData": {
+            "SessionId": "cf59a4e6-cb2e-4a2e-a889-2b0d200062a7",
+            "RelativePath": "489412051-21738461-哔哩哔哩晚会/19700101_080000-大事件-跨年晚会-2023最美的夜 bilibili晚会/20240101_161326_189-高清-003.flv",
+            "FileOpenTime": "2024-01-01T16:13:26.1975608+08:00",
+            "RoomId": 21738461,
+            "ShortId": 1231,
+            "Name": "哔哩哔哩晚会",
+            "Title": "2023最美的夜 bilibili晚会",
+            "AreaNameParent": "大事件",
+            "AreaNameChild": "跨年晚会",
+            "Recording": true,
+            "Streaming": false,
+            "DanmakuConnected": true
+        }
+    },
+    {
+        "EventType": "FileOpening",
+        "EventTimestamp": "2024-01-01T19:25:23.0838044+08:00",
+        "EventId": "5f6d6a5f-f54f-481a-91e1-fcc6bdc17dcb",
+        "EventData": {
+            "SessionId": "cf59a4e6-cb2e-4a2e-a889-2b0d200062a7",
+            "RelativePath": "489412051-21738461-哔哩哔哩晚会/19700101_080000-大事件-跨年晚会-2023最美的夜 bilibili晚会/20240101_192523_075-高清-004.flv",
+            "FileOpenTime": "2024-01-01T19:25:23.0808341+08:00",
+            "RoomId": 21738461,
+            "ShortId": 1231,
+            "Name": "哔哩哔哩晚会",
+            "Title": "2023最美的夜 bilibili晚会",
+            "AreaNameParent": "大事件",
+            "AreaNameChild": "跨年晚会",
+            "Recording": true,
+            "Streaming": false,
+            "DanmakuConnected": true
+        }
+    },
+    {
+        "EventType": "FileClosed",
+        "EventTimestamp": "2024-01-01T19:25:23.0748581+08:00",
+        "EventId": "04a551b1-23be-4417-b606-82c946cab725",
+        "EventData": {
+            "SessionId": "cf59a4e6-cb2e-4a2e-a889-2b0d200062a7",
+            "RelativePath": "489412051-21738461-哔哩哔哩晚会/19700101_080000-大事件-跨年晚会-2023最美的夜 bilibili晚会/20240101_161326_189-高清-003.flv",
+            "FileSize": 738349626,
+            "Duration": 11516.981,
+            "FileOpenTime": "2024-01-01T16:13:26.1975608+08:00",
+            "FileCloseTime": "2024-01-01T19:25:23.0728233+08:00",
+            "RoomId": 21738461,
+            "ShortId": 1231,
+            "Name": "哔哩哔哩晚会",
+            "Title": "2023最美的夜 bilibili晚会",
+            "AreaNameParent": "大事件",
+            "AreaNameChild": "跨年晚会",
+            "Recording": true,
+            "Streaming": false,
+            "DanmakuConnected": true
+        }
+    },
+    {
+        "EventType": "FileClosed",
+        "EventTimestamp": "2024-01-01T19:25:38.3250746+08:00",
+        "EventId": "c6a465ce-835b-43c9-a90b-1371e612ab91",
+        "EventData": {
+            "SessionId": "cf59a4e6-cb2e-4a2e-a889-2b0d200062a7",
+            "RelativePath": "489412051-21738461-哔哩哔哩晚会/19700101_080000-大事件-跨年晚会-2023最美的夜 bilibili晚会/20240101_192523_075-高清-004.flv",
+            "FileSize": 1268496,
+            "Duration": 17.977,
+            "FileOpenTime": "2024-01-01T19:25:23.0808341+08:00",
+            "FileCloseTime": "2024-01-01T19:25:38.3240765+08:00",
+            "RoomId": 21738461,
+            "ShortId": 1231,
+            "Name": "哔哩哔哩晚会",
+            "Title": "2023最美的夜 bilibili晚会",
+            "AreaNameParent": "大事件",
+            "AreaNameChild": "跨年晚会",
+            "Recording": true,
+            "Streaming": false,
+            "DanmakuConnected": true
+        }
+    },
+    {
+        "EventType": "SessionEnded",
+        "EventTimestamp": "2024-01-01T19:25:38.3340518+08:00",
+        "EventId": "f6c0f69f-504f-43b5-92e3-07b654e5d390",
+        "EventData": {
+            "SessionId": "cf59a4e6-cb2e-4a2e-a889-2b0d200062a7",
+            "RoomId": 21738461,
+            "ShortId": 1231,
+            "Name": "哔哩哔哩晚会",
+            "Title": "2023最美的夜 bilibili晚会",
+            "AreaNameParent": "大事件",
+            "AreaNameChild": "跨年晚会",
+            "Recording": false,
+            "Streaming": false,
+            "DanmakuConnected": true
+        }
+    }
+]

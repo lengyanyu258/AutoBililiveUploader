@@ -1,0 +1,12 @@
+[CONFIG]
+version = "0.1"
+
+[CONFIG.tools.DanmakuFactory]
+# DanmakuFactory 命令行程序的路径
+cli = '/home/shawn/Github/DanmakuFactory/DanmakuFactory'
+
+[CONFIG.tools.ffmpeg]
+cli = 'ffmpeg.exe'
+
+[CONFIG.tools.ffprobe]
+cli = 'ffprobe.exe'

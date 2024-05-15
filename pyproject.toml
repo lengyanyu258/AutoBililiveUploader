@@ -1,22 +1,50 @@
 [tool.poetry]
 name = "auto-bililive-uploader"
-version = "1.2.3"
-description = "自动压制並上传录播姬文件至网盘"
-authors = ["Shawn Sun <lengyanyu258@outlook.com>"]
+version = "2.0.0"
+description = "自动压制並上传哔哩哔哩录播文件至网盘"
 license = "GPL-3.0-or-later"
+authors = ["Shawn Sun <lengyanyu258@outlook.com>"]
 readme = "README.md"
+homepage = "https://github.com/lengyanyu258/AutoBililiveUploader"
+repository = "https://github.com/lengyanyu258/AutoBililiveUploader"
+documentation = "https://github.com/lengyanyu258/AutoBililiveUploader/wiki"
+keywords = ["generate", "bililive", "recording"]
+classifiers = [
+    "Environment :: Console",
+    "Environment :: Web Environment",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    "Operating System :: OS Independent",
+    "Topic :: Internet",
+    "Topic :: Multimedia :: Video",
+]
+packages = [{ include = "app" }, { include = "main.py" }]
+include = ["Scripts"]
 
 [tool.poetry.dependencies]
 python = "^3.11"
+apiflask = "^2.1.0"
+m3u8 = "^4.0.0"
+# requests = { version = "^2.31.0", platform = "linux" }
 danmaku-tools = { git = "https://github.com/lengyanyu258/danmaku_tools.git" }
 
 [tool.poetry.group.dev.dependencies]
 black = "*"
+isort = "*"
 
 [[tool.poetry.source]]
 name = "tuna"
 url = "https://pypi.tuna.tsinghua.edu.cn/simple"
-priority = "default"
+priority = "primary"
+
+[tool.poetry.scripts]
+blrup = "main:cli"
+genblr = "main:gen"
+
+[tool.poetry.urls]
+"Bug Tracker" = "https://github.com/lengyanyu258/AutoBililiveUploader/issues"
+"LICENSE" = "https://github.com/lengyanyu258/AutoBililiveUploader/blob/main/LICENSE"
+"Terms of Service" = "https://github.com/lengyanyu258/AutoBililiveUploader/wiki/Terms-of-Service"
 
 [build-system]
 requires = ["poetry-core"]

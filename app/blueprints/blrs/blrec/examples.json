@@ -1,0 +1,16 @@
+[
+    {
+        "id": "c9cf5192-f6d0-11eb-90ba-1c1b0d40d9ad",
+        "date": "2021-08-07 00:10:16.437018+08:00",
+        "type": "SpaceNoEnoughEvent",
+        "data": {
+            "path": "/mnt/w/blive_records",
+            "threshold": 1073741824,
+            "usage": {
+                "total": 465748086784,
+                "used": 465072795648,
+                "free": 675291136
+            }
+        }
+    }
+]
